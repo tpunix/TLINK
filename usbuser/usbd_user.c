@@ -12,7 +12,7 @@
 
 
 #define USBD_VID           0x0d28
-#define USBD_PID           0x0204
+#define USBD_PID           0x0206
 #define USBD_MAX_POWER     500
 
 
@@ -28,14 +28,8 @@
 #define CDC0_INTF   1
 
 
-#define CDC1_IN_EP  0x84
-#define CDC1_OUT_EP 0x04
-#define CDC1_INT_EP 0x85
-#define CDC1_INTF   3
-
-
-#define USB_CONFIG_SIZE (9 + CMSIS_DAP_INTERFACE_SIZE + CDC_ACM_DESCRIPTOR_LEN*2)
-#define INTF_NUM        5
+#define USB_CONFIG_SIZE (9 + CMSIS_DAP_INTERFACE_SIZE + CDC_ACM_DESCRIPTOR_LEN)
+#define INTF_NUM        3
 
 /*!< global descriptor */
 static const uint8_t cmsisdap_descriptor[] = {
@@ -49,8 +43,6 @@ static const uint8_t cmsisdap_descriptor[] = {
 
 	/* Interface 1,2 : CDC0 */
 	CDC_ACM_DESCRIPTOR_INIT(CDC0_INTF, CDC0_INT_EP, CDC0_OUT_EP, CDC0_IN_EP, USB_PACKET_SIZE, 4),
- 	/* Interface 3,4 : CDC1 */
-	CDC_ACM_DESCRIPTOR_INIT(CDC1_INTF, CDC1_INT_EP, CDC1_OUT_EP, CDC1_IN_EP, USB_PACKET_SIZE, 5),
 
 #ifdef CONFIG_USB_HS
     /* device qualifier descriptor */
@@ -63,9 +55,8 @@ static const uint8_t cmsisdap_descriptor[] = {
 static const struct usb_string_descriptor str0 = USB_ARRAY_DESC(0x0409);
 static const struct usb_string_descriptor str1 = USB_STRING_DESC("CherryUSB");
 static const struct usb_string_descriptor str2 = USB_STRING_DESC("T-LINK CMSIS-DAP");
-static const struct usb_string_descriptor str3 = USB_STRING_DESC("2023121800");
+static const struct usb_string_descriptor str3 = USB_STRING_DESC("2024010300");
 static const struct usb_string_descriptor str4 = USB_STRING_DESC("T-LINK UART1");
-static const struct usb_string_descriptor str5 = USB_STRING_DESC("T-LINK UART2");
 
 static uint8_t *string_desc[] = {
 	(uint8_t*)&str0,
@@ -73,7 +64,6 @@ static uint8_t *string_desc[] = {
 	(uint8_t*)&str2,
 	(uint8_t*)&str3,
 	(uint8_t*)&str4,
-	(uint8_t*)&str5,
 };
 static int string_cnt = sizeof(string_desc)/sizeof(uint8_t*);
 
@@ -332,13 +322,8 @@ static uint8_t cdc0_usb_rxbuf[USB_PACKET_SIZE];
 static uint8_t cdc0_uart_rxbuf[RXBUF_SIZE];
 static uint8_t cdc0_usb_txbuf[TXBUF_SIZE];
 
-static uint8_t cdc1_uart_txbuf[TXBUF_SIZE];
-static uint8_t cdc1_usb_rxbuf[USB_PACKET_SIZE];
-static uint8_t cdc1_uart_rxbuf[RXBUF_SIZE];
-static uint8_t cdc1_usb_txbuf[TXBUF_SIZE];
 
-
-CDC_UART cdc_uarts[2] = {
+CDC_UART cdc_uarts[] = {
 	{
 		.uart = UART3,
 		.pclk = APB1CLK_FREQ,
@@ -359,51 +344,12 @@ CDC_UART cdc_uarts[2] = {
 		.usb_txbuf  = cdc0_usb_txbuf,
 		.uart_rxbuf = cdc0_uart_rxbuf,
 	},
-
-	{
-		.uart = UART1,
-		.pclk = APB2CLK_FREQ,
-		.dma  = DMA1,
-		.txch = 3,
-		.txdma = &DMA1->CH[3],
-		.rxch = 4,
-		.rxdma = &DMA1->CH[4],
-		.intf_num = CDC1_INTF,
-		.out_ep = {
-			.ep_addr = CDC1_OUT_EP,
-		},
-		.in_ep = {
-			.ep_addr = CDC1_IN_EP,
-		},
-		.usb_rxbuf  = cdc1_usb_rxbuf,
-		.uart_txbuf = cdc1_uart_txbuf,
-		.usb_txbuf  = cdc1_usb_txbuf,
-		.uart_rxbuf = cdc1_uart_rxbuf,
-	},
 };
 
 
 CDC_UART *get_cdcuart(int ep, int intf)
 {
-	if(ep){
-		if(ep==cdc_uarts[0].out_ep.ep_addr || ep==cdc_uarts[0].in_ep.ep_addr){
-			return &cdc_uarts[0];
-		}
-		if(ep==cdc_uarts[1].out_ep.ep_addr || ep==cdc_uarts[1].in_ep.ep_addr){
-			return &cdc_uarts[1];
-		}
-	}
-
-	if(intf){
-		if(intf==cdc_uarts[0].intf_num || intf==cdc_uarts[0].intf_num+1){
-			return &cdc_uarts[0];
-		}
-		if(intf==cdc_uarts[1].intf_num || intf==cdc_uarts[1].intf_num+1){
-			return &cdc_uarts[1];
-		}
-	}
-
-	return NULL;
+	return &cdc_uarts[0];
 }
 
 
@@ -414,26 +360,22 @@ void dma1_channel3_irqhandler(void)
 }
 
 
-void dma1_channel5_irqhandler(void)
-{
-	// UART1.RXDMA
-	dma_irq_handle(&cdc_uarts[1]);
-}
-
-
 void usart3_irqhandler(void)
 {
 	uart_irq_handle(&cdc_uarts[0]);
 }
 
 
-void usart1_irqhandler(void)
-{
-	uart_irq_handle(&cdc_uarts[1]);
-}
-
 /******************************************************************************/
 
+#define Div4 3
+#define Div3 2
+
+#ifdef OSC_12M
+# define USBHS_DIV  Div3  // 12M/3 = 4M
+#else
+# define USBHS_DIV  Div4  // 16M/4 = 4M
+#endif
 
 void usb_dc_low_level_init(void)
 {
@@ -443,8 +385,8 @@ void usb_dc_low_level_init(void)
 	// b[28:29] USBHSCLK = 4MHz(16/4)
 	// b[31] USBHS_SRC = USB_PHY
 	RCC->CFGR2 = 0;
-	RCC->CFGR2 = 0x93000000;
-	RCC->CFGR2 = 0xd3000000;
+	RCC->CFGR2 = (1<<31) | (0<<30) | (1<<28) | (USBHS_DIV<<24);
+	RCC->CFGR2 = (1<<31) | (1<<30) | (1<<28) | (USBHS_DIV<<24);
 	RCC->AHBPCENR |= 0x0800;
 
 	int_enable(USBHS_IRQn);
@@ -457,7 +399,6 @@ void usbd_event_handler(uint8_t event)
 	switch (event) {
 	case USBD_EVENT_RESET:
 		cdcuart_reset(&cdc_uarts[0]);
-		cdcuart_reset(&cdc_uarts[1]);
 		break;
 	case USBD_EVENT_CONNECTED:
 		break;
@@ -469,7 +410,6 @@ void usbd_event_handler(uint8_t event)
 		break;
 	case USBD_EVENT_CONFIGURED:
 		cdc_recv_start(&cdc_uarts[0]);
-		cdc_recv_start(&cdc_uarts[1]);
 		dap_out_start();
 		break;
 	case USBD_EVENT_SET_REMOTE_WAKEUP:
@@ -498,11 +438,5 @@ void usb_dc_user_init(void)
 	int_enable(DMA1_Channel3_IRQn);
 	int_enable(USART3_IRQn);
 
-	cdcuart_init(&cdc_uarts[1]);
-	int_enable(DMA1_Channel5_IRQn);
-	int_enable(USART1_IRQn);
-
 	usbd_initialize();
 }
-
-

@@ -283,7 +283,7 @@ DMA1_Channel1_IRQHandler:
 DMA1_Channel2_IRQHandler:
 //DMA1_Channel3_IRQHandler:
 DMA1_Channel4_IRQHandler:
-//DMA1_Channel5_IRQHandler:
+DMA1_Channel5_IRQHandler:
 DMA1_Channel6_IRQHandler:
 DMA1_Channel7_IRQHandler:
 ADC1_2_IRQHandler:
@@ -305,7 +305,7 @@ I2C2_EV_IRQHandler:
 I2C2_ER_IRQHandler:
 SPI1_IRQHandler:
 SPI2_IRQHandler:
-//USART1_IRQHandler:
+USART1_IRQHandler:
 USART2_IRQHandler:
 //USART3_IRQHandler:
 EXTI15_10_IRQHandler:
@@ -362,14 +362,6 @@ DMA2_Channel11_IRQHandler:
 
 DMA1_Channel3_IRQHandler:
 	jal		dma1_channel3_irqhandler
-	mret
-
-DMA1_Channel5_IRQHandler:
-	jal		dma1_channel5_irqhandler
-	mret
-
-USART1_IRQHandler:
-	jal		usart1_irqhandler
 	mret
 
 USART3_IRQHandler:

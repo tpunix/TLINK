@@ -18,6 +18,7 @@ typedef unsigned long long u64;
 
 /******************************************************************************/
 
+#define OSC_12M
 
 #define SYSCLK_FREQ  144000000
 #define AHBCLK_FREQ  SYSCLK_FREQ

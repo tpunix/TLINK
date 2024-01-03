@@ -26,8 +26,11 @@ void system_init(void)
 	}
 
 	// USBDCLK=SYSCLK/3 AHB=SYSCLK APB1=AHB APB2=AHB ADC=APB2/8
-//	RCC->CFGR0 = 0x00a9c000;  // PLL: 12M*12 = 144M
-    RCC->CFGR0 = 0x009dc000;  // PLL: 16M*9  = 144M
+#ifdef OSC_12M
+	RCC->CFGR0 = 0x00a9c000;  // PLL: 12M*12 = 144M
+#else
+	RCC->CFGR0 = 0x009dc000;  // PLL: 16M*9  = 144M
+#endif
 	// PLL On
 	RCC->CTLR |= 0x01000000;
 	while((RCC->CTLR&0x02000000)==0);
@@ -50,23 +53,23 @@ void system_init(void)
 void device_init(void)
 {
 	RCC->AHBPCENR  = 0x00000007; // SRAM DMA2 DMA1
-	RCC->APB2PCENR = 0x0000687d; // UART1 TIM8 TIM1 GPIO AFIO
-	RCC->APB1PCENR = 0x10044100; // PWR UART3 SPI2 UART8
+	RCC->APB2PCENR = 0x0000007d; // GPIO AFIO
+	RCC->APB1PCENR = 0x10044000; // PWR UART3 SPI2
 
 	AFIO->PCFR1  = 0x04000000;   // SWD off
-	AFIO->PCFR2  = 0x04000000;   // UART1(10)
+	AFIO->PCFR2  = 0x00000000;
 
 	GPIOA->CFGLR = 0x44444424;   // PA1:o
-	GPIOA->CFGHR = 0x44444448;   // PA8:RX
-	GPIOA->OUTDR = 0x00000100;
+	GPIOA->CFGHR = 0x44444442;   // PA8:o
+	GPIOA->OUTDR = 0x00000000;
 
 	GPIOB->CFGLR = 0x44444444;   //
-	GPIOB->CFGHR = 0x98148944;   // PB10(TX) PB11(RX) PB13:o PB14:i PB15:(TX)
-	GPIOB->OUTDR = 0x00004800;
+	GPIOB->CFGHR = 0x44428944;   // PB10(TX) PB11(RX) PB12:o
+	GPIOB->OUTDR = 0x00000000;
 
-	GPIOC->CFGLR = 0x42444444;   // PC6:o
+	GPIOC->CFGLR = 0x44444444;   //
 	GPIOC->CFGHR = 0x44444444;   //
-	GPIOC->OUTDR = 0x00000040;
+	GPIOC->OUTDR = 0x00000000;
 
 	uart1_init(115200);
 }
@@ -129,10 +132,9 @@ void mdelay(int ms)
 
 /******************************************************************************/
 
-#define DEBUGOUT
-#undef  DEBUGOUT
+//#define DEBUGOUT
 
-#define DUART UART1
+#define DUART UART3
 
 void uart1_init(int baudrate)
 {

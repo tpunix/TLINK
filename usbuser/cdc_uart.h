@@ -52,7 +52,7 @@ typedef struct _CDC_UART{
 
 }CDC_UART;
 
-extern CDC_UART cdc_uarts[2];
+extern CDC_UART cdc_uarts[];
 
 
 /******************************************************************************/

@@ -294,10 +294,10 @@ of the same I/O port. The following SWDIO I/O Pin functions are provided:
 
 // T-LINK v1
 // TCK/SWCLK: PB13
-// TMS/SWDIO: PB14
-// TDO/RXD0 : PB11
-// TDI/TXD0 : PB10
-// nTRST    : PC6
+// TMS/SWDIO: PA13
+// TDO      : PB14
+// TDI      : PB15
+// nTRST    : PC8
 
 
 // Configure DAP I/O pins ------------------------------
@@ -309,12 +309,11 @@ Configures the DAP Hardware I/O pins for JTAG mode:
 */
 __STATIC_INLINE void PORT_JTAG_SETUP (void)
 {
-	cdc_pause(0);
-	gpio_mode(1, 10, 1, 1); //  TDI: out
-	gpio_mode(1, 11, 8, 1); //  TDO: in
+	gpio_mode(1, 15, 1, 1); //  TDI: out
+	gpio_mode(1, 14, 8, 1); //  TDO: in
 	gpio_mode(1, 13, 1, 1); //  TCK: out
-	gpio_mode(1, 14, 1, 1); //  TMS: out
-	gpio_mode(2,  6, 2, 1); // TRST: out
+	gpio_mode(0, 13, 1, 1); //  TMS: out
+	gpio_mode(2,  8, 2, 1); // TRST: out
 }
 
 
@@ -326,12 +325,8 @@ Configures the DAP Hardware I/O pins for Serial Wire Debug (SWD) mode:
 __STATIC_INLINE void PORT_SWD_SETUP (void)
 {
 	gpio_mode(1, 13, 1, 1); // SWCLK: out
-	gpio_mode(1, 14, 1, 1); // SWDIO: out
-	gpio_mode(0, 14, 2, 1); // RESET: out
-
-	gpio_mode(1, 10, 9, 0); // TXD0: out
-	gpio_mode(1, 11, 8, 1); // RXD0: in
-	cdc_resume(0);
+	gpio_mode(0, 13, 1, 1); // SWDIO: out
+	gpio_mode(2,  8, 2, 1); // RESET: out
 }
 
 /** Disable JTAG/SWD I/O Pins.
@@ -341,12 +336,10 @@ Disables the DAP Hardware I/O pins which configures:
 __STATIC_INLINE void PORT_OFF (void)
 {
 	gpio_mode(1, 13, 4, 0); // TCK/SWCLK
-	gpio_mode(1, 14, 4, 0); // TMS/SWDIO
-	gpio_mode(2,  6, 4, 0); // TRST/RESET
-
-	gpio_mode(1, 10, 9, 0); // TXD0: out
-	gpio_mode(1, 11, 8, 1); // RXD0: in
-	cdc_resume(0);
+	gpio_mode(0, 13, 4, 0); // TMS/SWDIO
+	gpio_mode(1, 14, 4, 0); // TDO
+	gpio_mode(1, 15, 4, 0); // TDI
+	gpio_mode(2,  8, 4, 0); // TRST/RESET
 }
 
 
@@ -372,40 +365,40 @@ __STATIC_FORCEINLINE void     PIN_SWCLK_TCK_CLR (void)
 
 __STATIC_FORCEINLINE uint32_t PIN_SWDIO_TMS_IN  (void)
 {
-	return (GPIOB->INDR & (1<<14)) ? 1: 0;
+	return (GPIOA->INDR & (1<<13)) ? 1: 0;
 }
 
 __STATIC_FORCEINLINE void     PIN_SWDIO_TMS_SET (void)
 {
-	GPIOB->BSHR = 1<<14;
+	GPIOA->BSHR = 1<<13;
 }
 
 __STATIC_FORCEINLINE void     PIN_SWDIO_TMS_CLR (void)
 {
-	GPIOB->BCR = 1<<14;
+	GPIOA->BCR = 1<<13;
 }
 
 __STATIC_FORCEINLINE uint32_t PIN_SWDIO_IN      (void)
 {
-	return (GPIOB->INDR & (1<<14)) ? 1: 0;
+	return (GPIOA->INDR & (1<<13)) ? 1: 0;
 }
 
 __STATIC_FORCEINLINE void     PIN_SWDIO_OUT     (uint32_t bit)
 {
 	if(bit&1)
-		GPIOB->BSHR = 1<<14;
+		GPIOA->BSHR = 1<<13;
 	else
-		GPIOB->BCR = 1<<14;
+		GPIOA->BCR = 1<<13;
 }
 
 __STATIC_FORCEINLINE void     PIN_SWDIO_OUT_ENABLE  (void)
 {
-	gpio_mode(1, 14, 1, 1);
+	gpio_mode(0, 13, 1, 1);
 }
 
 __STATIC_FORCEINLINE void     PIN_SWDIO_OUT_DISABLE (void)
 {
-	gpio_mode(1, 14, 8, 1);
+	gpio_mode(0, 13, 8, 1);
 }
 
 
@@ -413,15 +406,15 @@ __STATIC_FORCEINLINE void     PIN_SWDIO_OUT_DISABLE (void)
 
 __STATIC_FORCEINLINE uint32_t PIN_TDI_IN  (void)
 {
-	return (GPIOB->INDR & (1<<10)) ? 1 : 0;
+	return (GPIOB->INDR & (1<<15)) ? 1 : 0;
 }
 
 __STATIC_FORCEINLINE void     PIN_TDI_OUT (uint32_t bit)
 {
 	if(bit&1)
-		GPIOB->BSHR = 1<<10;
+		GPIOB->BSHR = 1<<15;
 	else
-		GPIOB->BCR = 1<<10;
+		GPIOB->BCR = 1<<15;
 }
 
 
@@ -429,7 +422,7 @@ __STATIC_FORCEINLINE void     PIN_TDI_OUT (uint32_t bit)
 
 __STATIC_FORCEINLINE uint32_t PIN_TDO_IN  (void)
 {
-	return (GPIOB->INDR & (1<<11)) ? 1 : 0;
+	return (GPIOB->INDR & (1<<14)) ? 1 : 0;
 }
 
 
@@ -437,15 +430,15 @@ __STATIC_FORCEINLINE uint32_t PIN_TDO_IN  (void)
 
 __STATIC_FORCEINLINE uint32_t PIN_nTRST_IN   (void)
 {
-	return (GPIOC->INDR & (1<<6)) ? 1 : 0;
+	return (GPIOC->INDR & (1<<8)) ? 1 : 0;
 }
 
 __STATIC_FORCEINLINE void     PIN_nTRST_OUT  (uint32_t bit)
 {
 	if(bit&1)
-		GPIOC->BSHR = 1<<6;
+		GPIOC->BSHR = 1<<8;
 	else
-		GPIOC->BCR = 1<<6;
+		GPIOC->BCR = 1<<8;
 }
 
 
@@ -453,15 +446,15 @@ __STATIC_FORCEINLINE void     PIN_nTRST_OUT  (uint32_t bit)
 
 __STATIC_FORCEINLINE uint32_t PIN_nRESET_IN  (void)
 {
-	return (GPIOC->INDR & (1<<6)) ? 1 : 0;
+	return (GPIOC->INDR & (1<<8)) ? 1 : 0;
 }
 
 __STATIC_FORCEINLINE void     PIN_nRESET_OUT (uint32_t bit)
 {
 	if(bit&1)
-		GPIOC->BSHR = 1<<6;
+		GPIOC->BSHR = 1<<8;
 	else
-		GPIOC->BCR = 1<<6;
+		GPIOC->BCR = 1<<8;
 }
 
 
@@ -486,9 +479,9 @@ It is recommended to provide the following LEDs for status indication:
 __STATIC_INLINE void LED_CONNECTED_OUT (uint32_t bit)
 {
 	if(bit&1)
-		GPIOA->BCR = 1<<1;
+		GPIOA->BCR = 1<<8;
 	else
-		GPIOA->BSHR = 1<<1;
+		GPIOA->BSHR = 1<<8;
 }
 
 /** Debug Unit: Set status Target Running LED.
